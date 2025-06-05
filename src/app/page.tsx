@@ -6,47 +6,50 @@ import { Character } from '@/types/character';
 import { BoldIcon } from '@heroicons/react/16/solid';
 
 const PAGE_SIZE_OPTIONS = [10, 20, 40, 50];
+
+//siralama filtresi, arttirilabilir
 const SORT_OPTIONS = [
   { value: 'name-asc', label: 'Name (A-Z)' },
   { value: 'name-desc', label: 'Name (Z-A)' },
   { value: 'id-asc', label: 'ID (Ascending)' },
   { value: 'id-desc', label: 'ID (Descending)' },
+  { value: 'random', label: 'Random' },
 ];
 
 export default function Home() {
   const [allCharacters, setAllCharacters] = useState<Character[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null); 
   const [currentPage, setCurrentPage] = useState(1);
   const [filters, setFilters] = useState({ status: '', species: '', gender: '' });
   const [selected, setSelected] = useState<Character | null>(null);
-  const [pageSize, setPageSize] = useState(20);
-  const [sort, setSort] = useState('name-asc');
+  const [pageSize, setPageSize] = useState(20); // sayfada her acildiginda hep 20 bilesen olacaktir, kullanici degistirebilir
+  const [sort, setSort] = useState('random'); // sayfa her acildiginda random siralama yapilacak
 
-  // Tüm karakterleri bir defa çek
+  
   useEffect(() => {
     setLoading(true);
-    getManyCharacters(260)
+    getManyCharacters(260) //karakter sayisini 260 olarak belirledim, degistirilebilir
+  
       .then((data) => {
         setAllCharacters(data);
         setError(null);
       })
-      .catch(() => setError('No characters found according to the filter.'))
+      .catch(() => setError('No characters found according to the filter.')) //hata mesaji
       .finally(() => setLoading(false));
   }, []);
 
-  // Filtre seçenekleri
+  // Filtre secenekleri
   const statusOptions = ['', 'Alive', 'Dead', 'unknown'];
   const genderOptions = ['', 'Female', 'Male', 'Genderless', 'unknown'];
   const speciesOptions = ['', 'Human', 'Alien', 'Humanoid', 'Mythological', 'unknown'];
 
-  // Filtre değişince sayfa başa dönsün
+  // Filtre secince uygun olanlari sayfa 1den baslayarak gostersin
   function handleFilterChange(e: React.ChangeEvent<HTMLSelectElement>) {
     setFilters({ ...filters, [e.target.name]: e.target.value });
     setCurrentPage(1);
   }
 
-  // Sıralama ve sayfa boyutu değişince sayfa başa dönsün
   function handlePageSizeChange(e: React.ChangeEvent<HTMLSelectElement>) {
     setPageSize(Number(e.target.value));
     setCurrentPage(1);
@@ -63,8 +66,8 @@ export default function Home() {
     (!filters.species || c.species === filters.species)
   );
 
-  // Sıralama işlemi
-  function getSortedCharacters(chars: Character[]) {
+    // Siralama islemi
+    function getSortedCharacters(chars: Character[]) {
     let sorted = [...chars];
     if (sort === 'name-asc') sorted.sort((a, b) => a.name.localeCompare(b.name));
     if (sort === 'name-desc') sorted.sort((a, b) => b.name.localeCompare(a.name));
@@ -73,16 +76,16 @@ export default function Home() {
     return sorted;
   }
 
-  // Sayfalama işlemi
+  // Sayfalama islemi
   const sortedCharacters = getSortedCharacters(filtered);
   const totalPages = Math.ceil(sortedCharacters.length / pageSize);
   const pagedCharacters = sortedCharacters.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   return (
     <div style={{ maxWidth: 1100, margin: '0 auto', padding: 20 }}>
-      <h1 style={{ fontSize: 28, fontWeight: 'bold', marginBottom: 20 }}>Rick and Morty Characters</h1>
+      <h1 style={{ fontSize: 32, fontWeight: 'bolder', marginBottom: 20, backgroundColor: '#9acd32', color: 'black', padding: 10, borderRadius: 10, textAlign: 'center' }}>Rick and Morty Characters</h1>
 
-      {/* Filtreler ve sayfa ayarları */}
+      {/* Filtreler ve sayfa ayarlari */}
       <div style={{ display: 'flex', gap: 10, marginBottom: 20, flexWrap: 'wrap', alignItems: 'center' }}>
         <select name="status" value={filters.status} onChange={handleFilterChange}>
           {statusOptions.map(opt => <option key={opt} value={opt}>{opt || 'All Statuses'}</option>)}
@@ -144,7 +147,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* Sayfa numaraları */}
+      {/* Sayfa numaralari */}
       <div style={{ marginTop: 10, display: 'flex', gap: 5, flexWrap: 'wrap' }}>
         {Array.from({ length: totalPages }, (_, i) => (
           <button
