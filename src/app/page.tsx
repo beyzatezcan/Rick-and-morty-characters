@@ -1,103 +1,195 @@
-import Image from "next/image";
+'use client';
+
+import React, { useEffect, useState } from 'react';
+import { getManyCharacters } from '@/services/api';
+import { Character } from '@/types/character';
+import { BoldIcon } from '@heroicons/react/16/solid';
+
+const PAGE_SIZE_OPTIONS = [10, 20, 40, 50];
+const SORT_OPTIONS = [
+  { value: 'name-asc', label: 'Name (A-Z)' },
+  { value: 'name-desc', label: 'Name (Z-A)' },
+  { value: 'id-asc', label: 'ID (Ascending)' },
+  { value: 'id-desc', label: 'ID (Descending)' },
+];
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const [allCharacters, setAllCharacters] = useState<Character[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [filters, setFilters] = useState({ status: '', species: '', gender: '' });
+  const [selected, setSelected] = useState<Character | null>(null);
+  const [pageSize, setPageSize] = useState(20);
+  const [sort, setSort] = useState('name-asc');
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+  // Tüm karakterleri bir defa çek
+  useEffect(() => {
+    setLoading(true);
+    getManyCharacters(260)
+      .then((data) => {
+        setAllCharacters(data);
+        setError(null);
+      })
+      .catch(() => setError('No characters found according to the filter.'))
+      .finally(() => setLoading(false));
+  }, []);
+
+  // Filtre seçenekleri
+  const statusOptions = ['', 'Alive', 'Dead', 'unknown'];
+  const genderOptions = ['', 'Female', 'Male', 'Genderless', 'unknown'];
+  const speciesOptions = ['', 'Human', 'Alien', 'Humanoid', 'Mythological', 'unknown'];
+
+  // Filtre değişince sayfa başa dönsün
+  function handleFilterChange(e: React.ChangeEvent<HTMLSelectElement>) {
+    setFilters({ ...filters, [e.target.name]: e.target.value });
+    setCurrentPage(1);
+  }
+
+  // Sıralama ve sayfa boyutu değişince sayfa başa dönsün
+  function handlePageSizeChange(e: React.ChangeEvent<HTMLSelectElement>) {
+    setPageSize(Number(e.target.value));
+    setCurrentPage(1);
+  }
+  function handleSortChange(e: React.ChangeEvent<HTMLSelectElement>) {
+    setSort(e.target.value);
+    setCurrentPage(1);
+  }
+
+  // Filtreleme
+  const filtered = allCharacters.filter(c =>
+    (!filters.status || c.status === filters.status) &&
+    (!filters.gender || c.gender === filters.gender) &&
+    (!filters.species || c.species === filters.species)
+  );
+
+  // Sıralama işlemi
+  function getSortedCharacters(chars: Character[]) {
+    let sorted = [...chars];
+    if (sort === 'name-asc') sorted.sort((a, b) => a.name.localeCompare(b.name));
+    if (sort === 'name-desc') sorted.sort((a, b) => b.name.localeCompare(a.name));
+    if (sort === 'id-asc') sorted.sort((a, b) => a.id - b.id);
+    if (sort === 'id-desc') sorted.sort((a, b) => b.id - a.id);
+    return sorted;
+  }
+
+  // Sayfalama işlemi
+  const sortedCharacters = getSortedCharacters(filtered);
+  const totalPages = Math.ceil(sortedCharacters.length / pageSize);
+  const pagedCharacters = sortedCharacters.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
+  return (
+    <div style={{ maxWidth: 1100, margin: '0 auto', padding: 20 }}>
+      <h1 style={{ fontSize: 28, fontWeight: 'bold', marginBottom: 20 }}>Rick and Morty Characters</h1>
+
+      {/* Filtreler ve sayfa ayarları */}
+      <div style={{ display: 'flex', gap: 10, marginBottom: 20, flexWrap: 'wrap', alignItems: 'center' }}>
+        <select name="status" value={filters.status} onChange={handleFilterChange}>
+          {statusOptions.map(opt => <option key={opt} value={opt}>{opt || 'All Statuses'}</option>)}
+        </select>
+        <select name="gender" value={filters.gender} onChange={handleFilterChange}>
+          {genderOptions.map(opt => <option key={opt} value={opt}>{opt || 'All Genders'}</option>)}
+        </select>
+        <select name="species" value={filters.species} onChange={handleFilterChange}>
+          {speciesOptions.map(opt => <option key={opt} value={opt}>{opt || 'All Species'}</option>)}
+        </select>
+        <span style={{ marginLeft: 20, fontWeight: 'bold' }}>Show per page:</span>
+        <select value={pageSize} onChange={handlePageSizeChange}>
+          {PAGE_SIZE_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+        </select>
+        <span style={{ marginLeft: 20, fontWeight: 'bold' }}>Sort:</span>
+        <select value={sort} onChange={handleSortChange}>
+          {SORT_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+        </select>
+      </div>
+
+      {/* Karakterler grid */}
+      {loading ? (
+        <div style={{ margin: 40, textAlign: 'center' }}>Loading...</div>
+      ) : (error && error.toString().includes('404')) || pagedCharacters.length === 0 ? (
+        <div style={{ margin: 40, textAlign: 'center' }}>No characters found according to the filter.</div>
+      ) : error ? (
+        <div style={{ margin: 40, color: 'red', textAlign: 'center' }}>{error}</div>
+      ) : (
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+          gap: 20,
+          marginBottom: 30
+        }}>
+          {pagedCharacters.map((character) => (
+            <div
+              key={character.id}
+              style={{
+                background: '#fff',
+                borderRadius: 8,
+                boxShadow: '0 2px 8px #0001',
+                padding: 12,
+                color: 'black',
+                cursor: 'pointer',
+                border: selected?.id === character.id ? '2px solid #3b82f6' : '1px solid #eee'
+              }}
+              onClick={() => setSelected(character)}
+            >
+              <img
+                src={character.image}
+                alt={character.name}
+                style={{ width: '100%', height: 180, objectFit: 'cover', borderRadius: 6, marginBottom: 8 }}
+              />
+              <div style={{ fontWeight: 'bold', fontSize: 18 }}>{character.name}</div>
+              <div style={{ fontSize: 14, color: '#555' }}>{character.status} - {character.species}</div>
+              <div style={{ fontSize: 13, color: '#888' }}>{character.gender}</div>
+            </div>
+          ))}
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+      )}
+
+      {/* Sayfa numaraları */}
+      <div style={{ marginTop: 10, display: 'flex', gap: 5, flexWrap: 'wrap' }}>
+        {Array.from({ length: totalPages }, (_, i) => (
+          <button
+            key={i}
+            onClick={() => setCurrentPage(i + 1)}
+            style={{
+              padding: '6px 12px',
+              borderRadius: 4,
+              border: '1px solid #ccc',
+              background: currentPage === i + 1 ? '#3b82f6' : '#f3f4f6',
+              color: currentPage === i + 1 ? 'white' : 'black',
+              fontWeight: currentPage === i + 1 ? 'bold' : 'normal'
+            }}
+          >
+            {i + 1}
+          </button>
+        ))}
+      </div>
+
+      {/* Detay */}
+      {selected && (
+        <div style={{
+          marginTop: 30,
+          padding: 20,
+          background: 'white',
+          color: 'black',
+          borderRadius: 8,
+          boxShadow: '0 2px 8px #0001',
+          display: 'flex',
+          gap: 20,
+          alignItems: 'center'
+        }}>
+          <img src={selected.image} alt={selected.name} style={{ width: 120, height: 120, borderRadius: '50%', objectFit: 'cover', border: '2px solid #eee' }} />
+          <div>
+            <h2><b>{selected.name}</b> <span style={{ fontSize: 14, color: '#888', fontWeight: 'bold' }}>#{selected.id}</span></h2>
+            <p><b>Status:</b> {selected.status}</p>
+            <p><b>Species:</b> {selected.species}</p>
+            <p><b>Gender:</b> {selected.gender}</p>
+            <p><b>Origin:</b> {selected.origin.name}</p>
+            <p><b>Location:</b> {selected.location.name}</p>
+            <p><b>Episode Count:</b> {selected.episode.length}</p>
+            <button onClick={() => setSelected(null)} style={{ marginTop: 10, padding: '6px 16px', background: '#ef4444', color: 'white', border: 'none', borderRadius: 4 }}>Close</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
