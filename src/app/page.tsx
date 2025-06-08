@@ -84,7 +84,7 @@ export default function Home() {
   return (
     <div style={{ maxWidth: 1400, margin: '0 auto', padding: 20 }}>
 
-  {/* H1 ve P aynı kutuda */}
+  {/* H1 ve P ayni kutuda */}
   <div style={{ 
     padding: 25, 
     borderRadius: 15, 
@@ -255,7 +255,7 @@ export default function Home() {
             ))}
           </div>
 
-          {/* Detay */}
+          {/* Detay sayfasindakiler */}
           {selected && (
             <div style={{
               marginTop: 30,
