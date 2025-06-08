@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { getManyCharacters } from '@/services/api';
 import { Character } from '@/types/character';
-import { BoldIcon } from '@heroicons/react/16/solid';
+
 
 const PAGE_SIZE_OPTIONS = [10, 20, 40, 50];
 
