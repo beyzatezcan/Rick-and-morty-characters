@@ -68,7 +68,7 @@ export default function Home() {
 
     // Siralama islemi
     function getSortedCharacters(chars: Character[]) {
-    let sorted = [...chars];
+    const sorted = [...chars];
     if (sort === 'name-asc') sorted.sort((a, b) => a.name.localeCompare(b.name));
     if (sort === 'name-desc') sorted.sort((a, b) => b.name.localeCompare(a.name));
     if (sort === 'id-asc') sorted.sort((a, b) => a.id - b.id);
